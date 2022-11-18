@@ -1,0 +1,105 @@
+---
+title: "Code fMRI Typicality Study"
+author: "Mara"
+date: "15 de Outubro de 2022"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#INFO: SEMANTIC COGNITION IN HEALTHY AGEING: NEURAL SIGNATURES OF REPRESENTATION AND CONTROL MECHANISMS IN NAMING TYPICAL AND ATYPICAL OBJECTS
+#Mara Alves1, Patrícia Figueiredo & Ana Raposo1
+#1 Research Center for Psychological Science, Faculdade de Psicologia, Universidade de Lisboa, Portugal
+#2 ISR-Lisboa/LARSyS and Department of Bioengineering, Instituto Superior TÃ©cnico, Universidade de Lisboa, Portugal
+#Corresponding author: Mara Alves,Faculdade de Psicologia, Universidade de Lisboa, Alameda da Universidade, 1649-013 Lisboa,Portugal. Phone: +351 21 7943867. E-mail: mlalves@psicologia.ulisboa.pt
+```
+
+```{r}
+#Analyses of descriptive information, CCT RT data, and behavioural naming performance for young and older adults
+```
+
+
+```{r}
+##Libraries
+library(readr)
+library(lme4)
+library(lmerTest)
+library(tidyverse)
+library(car)
+```
+ 
+ 
+```{r}
+#Upload DataBases
+Descriptive_fMRI <- read_delim("Descriptive_Data_fmri.csv",
+          ";", escape_double = FALSE, locale = locale(decimal_mark = ","), trim_ws = TRUE) 
+Beh_Data <- read_delim("Beh_Data.csv",
+           ";", escape_double = FALSE, locale = locale(decimal_mark = ","), trim_ws = TRUE)
+Y_O_CCT_RT <- read_delim("Young_Old_CCT_RT.csv",  
+          ";", escape_double = FALSE, locale = locale(decimal_mark = ","), trim_ws = TRUE)
+```
+ 
+ 
+```{r}
+##Demographic and Neuropsychological Data Analyses
+
+#Comparision between young and older adults
+t.test (AGE ~ PART, Descriptive_fMRI)
+t.test (Schooling ~ PART, Descriptive_fMRI)
+t.test (VOC ~ PART, Descriptive_fMRI)
+t.test (MoCA_T ~ PART, Descriptive_fMRI)
+t.test (EIS ~ PART, Descriptive_fMRI)
+t.test (VIS ~ PART, Descriptive_fMRI)
+t.test (LIS ~ PART, Descriptive_fMRI)
+t.test (MIS ~ PART, Descriptive_fMRI)
+t.test (AIS ~ PART, Descriptive_fMRI)
+t.test (CCT_ACC ~ PART, Descriptive_fMRI)
+t.test (CCT_RT ~ PART, Descriptive_fMRI)
+t.test (Grey_n ~ PART, Descriptive_fMRI)
+t.test (White_n ~ PART, Descriptive_fMRI)
+
+#Correlation between Grey and White matter
+cor.test(~Grey_n + White_n, Descriptive_fMRI)
+
+#RT analysis for CCT semantic factors
+CCT_fMRI_RT <- glmer (RT ~ all_groups * (easy_cen + stren_cen + comp_cen) + 
+                    (1|TRIAL) + 
+                    (1|subject)
+                  , data=Y_O_CCT_RT,family = inverse.gaussian(link = "identity"),nAGQ=0, control=glmerControl(optCtrl=list(maxfun=35000), optimizer = "nloptwrap", calc.derivs = FALSE))
+summary(CCT_fMRI_RT)
+
+```
+ 
+ 
+```{r}
+##Behavioural Data Analyses
+
+#Prep
+Naming <- Beh_Data %>%
+  mutate(all_groups = if_else(PART <= "Older", 1/2, -1/2))
+Naming$all_groups<-as.factor(Naming$all_groups)
+Naming$Tipi<-as.factor(Naming$Tipi)
+options("contrasts")
+options(contrasts = c("contr.sum", "contr.poly"))
+
+#Remove scientific notation
+options(scipen = 999) 
+
+#RT
+RT <- lmer (RT ~all_groups*Tipi +
+               (1|subject), data=Naming, control=lmerControl(optCtrl =list(maxfun=35000), optimizer = "nloptwrap", calc.derivs = FALSE))
+summary(RT)
+
+#ACC
+ACC <- glmer(ACC ~ all_groups * Tipi +
+               (1|subject), data=Naming, family = inverse.gaussian(link = "identity"),nAGQ=1, control=glmerControl(optCtrl=list(maxfun=35000), optimizer = "nloptwrap", calc.derivs = FALSE))
+summary(ACC)
+
+```
+ 
